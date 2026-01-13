@@ -62,24 +62,37 @@ def main(argv):
     # FIXME: Create ClusterFactory and parametrically match benchmarks and clusters.
     cluster = Ceph(settings.cluster)
 
+    logger.debug("Initialized cluster object: %s", cluster)
+
     # Only initialize and prefill upfront if we aren't rebuilding for each test.
     if not rebuild_every_test:
         if not cluster.use_existing:
             cluster.initialize()
         # Why does it need to iterate for the creation of benchmarks?
         for iteration in range(settings.cluster.get("iterations", 0)):
+            logger.debug("Iteration: %d", iteration)
             benchmarks = benchmarkfactory.get_all(archive_dir, cluster, iteration)
+            logger.debug("Benchmarks: %s", benchmarks)
             for b in benchmarks:
                 if b.exists():
+                    logger.debug(
+                        "Benchmark %s already exists, skipping initialization.", b
+                    )
                     continue
                 if b.getclass() not in global_init:
+                    logger.debug("Initializing Benchmark: %s", b)
                     b.initialize()
                     b.initialize_endpoints()
                     b.prefill()
                     b.cleanup()
+
+                logger.debug("Benchmark %s initialized.", b)
                 # Only initialize once per class.
                 global_init[b.getclass()] = b
 
+    logger.debug("Global initialization complete: %s", global_init)
+
+    logger.debug("Read Test configuration: %s", settings.cluster.get("tests", []))
     # logger.debug("Settings.cluster.is_teuthology:%s",settings.cluster.get('is_teuthology', False))
     # Run the benchmarks
     return_code = 0
