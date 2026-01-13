@@ -11,29 +11,31 @@ from cluster.ceph import Ceph
 from log_support import setup_loggers
 
 logger = logging.getLogger("cbt")
-# Uncomment this if further debug detail (module, funcname) are needed
-#FORMAT = "%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s():%(lineno)s] %(message)s"
-#logging.basicConfig(format=FORMAT, force=True)
-#logger.setLevel(logging.DEBUG)
+# Uncomment this if further debug detail (module, funcname) are needed
+# FORMAT = "%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s():%(lineno)s] %(message)s"
+# logging.basicConfig(format=FORMAT, force=True)
+# logger.setLevel(logging.DEBUG)
 
 
 def parse_args(args):
-    parser = argparse.ArgumentParser(description='Continuously run ceph tests.')
+    parser = argparse.ArgumentParser(description="Continuously run ceph tests.")
     parser.add_argument(
-        '-a', '--archive',
+        "-a",
+        "--archive",
         required=True,
-        help='Directory where the results should be archived.',
+        help="Directory where the results should be archived.",
     )
 
     parser.add_argument(
-        '-c', '--conf',
+        "-c",
+        "--conf",
         required=False,
-        help='The ceph.conf file to use.',
+        help="The ceph.conf file to use.",
     )
 
     parser.add_argument(
-        'config_file',
-        help='YAML config file.',
+        "config_file",
+        help="YAML config file.",
     )
 
     return parser.parse_args(args[1:])
@@ -44,13 +46,18 @@ def main(argv):
     ctx = parse_args(argv)
     settings.initialize(ctx)
 
-    logger.debug("Settings.cluster:\n    %s",
-                 pprint.pformat(settings.cluster).replace("\n", "\n    "))
+    logger.debug(
+        "Settings.cluster:\n    %s",
+        pprint.pformat(settings.cluster).replace("\n", "\n    "),
+    )
 
     global_init = collections.OrderedDict()
-    rebuild_every_test = settings.cluster.get('rebuild_every_test', False)
-    archive_dir = settings.cluster.get('archive_dir')
+    rebuild_every_test = settings.cluster.get("rebuild_every_test", False)
+    archive_dir = settings.cluster.get("archive_dir")
 
+    logger.debug(
+        "Rebuild every test: %s, Archive Dir: %s", rebuild_every_test, archive_dir
+    )
 
     # FIXME: Create ClusterFactory and parametrically match benchmarks and clusters.
     cluster = Ceph(settings.cluster)
@@ -58,7 +65,7 @@ def main(argv):
     # Only initialize and prefill upfront if we aren't rebuilding for each test.
     if not rebuild_every_test:
         if not cluster.use_existing:
-            cluster.initialize();
+            cluster.initialize()
         # Why does it need to iterate for the creation of benchmarks?
         for iteration in range(settings.cluster.get("iterations", 0)):
             benchmarks = benchmarkfactory.get_all(archive_dir, cluster, iteration)
@@ -73,14 +80,14 @@ def main(argv):
                 # Only initialize once per class.
                 global_init[b.getclass()] = b
 
-    #logger.debug("Settings.cluster.is_teuthology:%s",settings.cluster.get('is_teuthology', False))
+    # logger.debug("Settings.cluster.is_teuthology:%s",settings.cluster.get('is_teuthology', False))
     # Run the benchmarks
     return_code = 0
     try:
         for iteration in range(settings.cluster.get("iterations", 0)):
             benchmarks = benchmarkfactory.get_all(archive_dir, cluster, iteration)
             for b in benchmarks:
-                if not b.exists() and not settings.cluster.get('is_teuthology', False):
+                if not b.exists() and not settings.cluster.get("is_teuthology", False):
                     continue
 
                 if rebuild_every_test:
@@ -96,5 +103,6 @@ def main(argv):
 
     return return_code
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     exit(main(sys.argv))
