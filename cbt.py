@@ -69,6 +69,7 @@ def main(argv):
         if not cluster.use_existing:
             cluster.initialize()
         # Why does it need to iterate for the creation of benchmarks?
+        logger.debug("Iterations: %s", settings.cluster.get("iterations", 0))
         for iteration in range(settings.cluster.get("iterations", 0)):
             logger.debug("Iteration: %d", iteration)
             benchmarks = benchmarkfactory.get_all(archive_dir, cluster, iteration)
